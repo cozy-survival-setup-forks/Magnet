@@ -22,6 +22,10 @@ blacklist: []
 # Collect items that have a name, lore or enchantments
 collect-custom-items: true
 
+# Collect items a player threw with Q. Off by default so players can trade and throw items in a collector chunk.
+# Turn it on to test with your own drops. Death drops and fishing catches are never collected.
+collect-thrown-items: false
+
 # How many different items one collector can hold, and how many items in total (0 = no limit)
 max-types: 200
 max-items: 0

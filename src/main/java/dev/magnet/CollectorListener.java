@@ -47,7 +47,8 @@ public final class CollectorListener implements Listener {
 
     // ---- collecting ----
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    // NORMAL, so this runs before stacking plugins (RoseStacker, WildStacker) that handle the spawn at HIGH and merge the item
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onItemSpawn(ItemSpawnEvent event) {
         Collectors collectors = plugin.collectors();
         if (collectors.isEmpty()) return;
@@ -56,8 +57,9 @@ public final class CollectorListener implements Listener {
         Collector collector = collectors.at(item.getWorld(), item.getX(), item.getZ());
         if (collector == null) return;
 
-        // Things a player threw, and items with an infinite pickup delay (display items of other plugins), stay put
-        if (item.getThrower() != null || item.getPickupDelay() >= Short.MAX_VALUE) return;
+        // Items with an infinite pickup delay (display items of other plugins) stay put, and so do things a player threw unless config allows it
+        if (item.getPickupDelay() >= Short.MAX_VALUE) return;
+        if (item.getThrower() != null && !plugin.settings().collectThrown) return;
         if (!ignored.isEmpty() && ignored.remove(item.getUniqueId())) return;
         if (deathTick == Bukkit.getCurrentTick() && item.getWorld() == deathWorld
                 && Math.abs(item.getX() - deathX) < 6 && Math.abs(item.getZ() - deathZ) < 6) return;

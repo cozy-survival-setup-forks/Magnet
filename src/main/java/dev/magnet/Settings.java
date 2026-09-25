@@ -15,6 +15,7 @@ public final class Settings {
     public final Set<String> disabledWorlds = new HashSet<>();
     public final Set<Material> blacklist = EnumSet.noneOf(Material.class);
     public final boolean collectCustom;
+    public final boolean collectThrown;
     public final int maxTypes;
     public final long maxItems;
     public final int autosellSeconds;
@@ -41,6 +42,7 @@ public final class Settings {
         }
 
         collectCustom = config.getBoolean("collect-custom-items", true);
+        collectThrown = config.getBoolean("collect-thrown-items", false);
         maxTypes = Math.max(1, config.getInt("max-types", 200));
         maxItems = Math.max(0, config.getLong("max-items", 0));
         autosellSeconds = Math.max(5, config.getInt("autosell-interval", 30));

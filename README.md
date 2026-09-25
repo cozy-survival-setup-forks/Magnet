@@ -9,7 +9,7 @@ Chunk collectors for Paper 1.21.11. Place a collector and it picks up every item
 3. Right click to open. Click an item to take a stack, shift click to take all of it. The buttons at the bottom take everything, sell everything, and turn autosell on or off.
 4. A collector must be empty before it can be broken. Breaking it gives the item back.
 
-Explosions and pistons cannot move a collector. Items a player threw, the loot a player drops on death, and fishing catches are left alone.
+Explosions and pistons cannot move a collector. Items a player threw with Q, the loot a player drops on death, and fishing catches are left alone. To collect thrown items too (handy for testing with your own drops), set `collect-thrown-items: true`. Items already lying in the chunk when the collector is placed are not picked up, only new drops. Item stackers like RoseStacker are fine: the collector takes the item before they merge it.
 
 ## The pull animation
 
