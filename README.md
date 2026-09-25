@@ -13,7 +13,7 @@ Explosions and pistons cannot move a collector. Items a player threw with Q, the
 
 ## The pull animation
 
-Items that drop in the chunk play their normal drop (the pop out of a broken block, a mob's drop, a throw), lie on the ground for a few seconds, then float up, circle the collector once and shrink into it, so players can see what is collecting.
+Items that drop in the chunk play their normal drop (the pop out of a broken block, a mob's drop, a throw), lie on the ground for a few seconds, then drift up toward the collector, circle it once and shrink into it, so players can see what is collecting.
 
 It is only a visual. The item is counted the moment it drops. The copy on the ground cannot be picked up by players, mobs or hoppers, cannot merge with other items and is never saved, so nothing can be stolen or duplicated, and a restart or chunk unload cannot lose anything.
 

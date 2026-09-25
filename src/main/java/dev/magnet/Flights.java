@@ -31,11 +31,12 @@ import java.util.UUID;
  */
 public final class Flights implements Runnable {
 
-    private static final int RISE_TICKS = 10;
+    private static final int SETTLE_TICKS = 4;  // the client must know about the display before it starts to move
+    private static final int MIN_MOVE_TICKS = 24; // the slow climb to the circle around the collector
+    private static final int MAX_MOVE_TICKS = 57;
     private static final int ORBIT_STEPS = 10;
     private static final int STEP_TICKS = 3;
     private static final int SWALLOW_TICKS = 4;
-    private static final int SPIN_TICKS = 20;
     private static final int LANDING_PATIENCE = 140; // ticks it may take to land before it lifts off anyway
     private static final double ORBIT_RADIUS = 1.4;
     private static final double END_RADIUS = 0.35;
@@ -53,15 +54,15 @@ public final class Flights implements Runnable {
         }
     }
 
-    private enum Stage { RISE, APPROACH, ORBIT, SWALLOW, DONE }
+    private enum Stage { SETTLE, MOVE, ORBIT, SWALLOW, DONE }
 
     private static final class Flight {
         final ItemDisplay display;
         final Collector collector;
         final double gx, gy, gz; // where it lay
         final double cx, cy, cz; // the middle of the collector
-        Stage stage = Stage.RISE;
-        int age, nextAt = 1, step;
+        Stage stage = Stage.SETTLE;
+        int age, nextAt = SETTLE_TICKS, step, moveSteps;
         double angle;
 
         Flight(ItemDisplay display, Collector collector, double gx, double gy, double gz) {
@@ -180,27 +181,35 @@ public final class Flights implements Runnable {
     private boolean step(Flight f) {
         ItemDisplay display = f.display;
         switch (f.stage) {
-            case RISE -> {
-                display.setTeleportDuration(RISE_TICKS);
-                display.teleport(new Location(display.getWorld(), f.gx, f.gy + 1.1, f.gz));
-                display.setTransformation(transform(3.0f, 1f)); // half a turn on the way up
-                display.setInterpolationDelay(0);
-                display.setInterpolationDuration(RISE_TICKS);
-                f.nextAt = f.age + RISE_TICKS;
-                f.stage = Stage.APPROACH;
-            }
-            case APPROACH -> {
+            case SETTLE -> {
                 if (plugin.collectors().at(display.getWorld(), f.collector.x, f.collector.z) != f.collector) return true;
 
-                // Swing in to the circle around the collector at the spot nearest to where it floats
+                // A slow climb toward the circle around the collector, in the direction it lies from the collector
                 f.angle = Math.atan2(f.gz - f.cz, f.gx - f.cx);
                 double distance = Math.max(0, Math.hypot(f.gx - f.cx, f.gz - f.cz) - ORBIT_RADIUS);
-                int ticks = Math.max(8, Math.min(40, (int) (distance * 1.5)));
-                display.setTeleportDuration(ticks);
-                display.teleport(new Location(display.getWorld(), f.cx + ORBIT_RADIUS * Math.cos(f.angle), f.cy + 0.9, f.cz + ORBIT_RADIUS * Math.sin(f.angle)));
-                f.nextAt = f.age + ticks;
-                f.stage = Stage.ORBIT;
+                int ticks = Math.max(MIN_MOVE_TICKS, Math.min(MAX_MOVE_TICKS, (int) (distance * 2.5)));
+                f.moveSteps = ticks / STEP_TICKS;
                 f.step = 0;
+                display.setTeleportDuration(STEP_TICKS);
+                display.setTransformation(transform(3.0f, 1f)); // half a turn on the way
+                display.setInterpolationDelay(0);
+                display.setInterpolationDuration(f.moveSteps * STEP_TICKS);
+                f.nextAt = f.age;
+                f.stage = Stage.MOVE;
+            }
+            case MOVE -> {
+                // Horizontal speed is even, the height eases in and out, so it lifts off gently instead of jumping up
+                f.step++;
+                double p = f.step / (double) f.moveSteps;
+                double ease = p * p * (3 - 2 * p);
+                double endX = f.cx + ORBIT_RADIUS * Math.cos(f.angle);
+                double endZ = f.cz + ORBIT_RADIUS * Math.sin(f.angle);
+                display.teleport(new Location(display.getWorld(), f.gx + (endX - f.gx) * p, f.gy + (f.cy + 0.9 - f.gy) * ease, f.gz + (endZ - f.gz) * p));
+                f.nextAt = f.age + STEP_TICKS;
+                if (f.step >= f.moveSteps) {
+                    f.step = 0;
+                    f.stage = Stage.ORBIT;
+                }
             }
             case ORBIT -> {
                 // One lap, spiralling in and sinking a little
