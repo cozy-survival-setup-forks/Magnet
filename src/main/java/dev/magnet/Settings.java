@@ -22,7 +22,7 @@ public final class Settings {
     public final boolean sellCustom;
     public final String priceSource;
     public final boolean animation;
-    public final int animationTicks;
+    public final int animationGround;
     public final int animationMax;
     public final boolean animationSound;
 
@@ -50,8 +50,8 @@ public final class Settings {
         priceSource = config.getString("price-source", "AUTO").toUpperCase(Locale.ROOT);
 
         animation = config.getBoolean("animation.enabled", true);
-        animationTicks = Math.max(8, Math.min(100, config.getInt("animation.duration", 16)));
-        animationMax = Math.max(1, config.getInt("animation.max-flying", 100));
+        animationGround = 20 * Math.max(0, Math.min(30, config.getInt("animation.ground-time", 3)));
+        animationMax = Math.max(1, config.getInt("animation.max-flying", 80));
         animationSound = config.getBoolean("animation.sound", true);
     }
 

@@ -13,9 +13,11 @@ Explosions and pistons cannot move a collector. Items a player threw with Q, the
 
 ## The pull animation
 
-When an item drops in the chunk, a small copy of it lifts off, swoops over and shrinks into the collector, so players can see what is collecting. It is only a visual: the item is already in the collector when it starts. Turn it off with `animation.enabled: false`, and change the speed with `animation.duration` (ticks, 16 by default).
+Items that drop in the chunk fall to the ground and lie there for a few seconds, then float up, circle the collector once and shrink into it, so players can see what is collecting. It is only a visual. The item is counted the moment it drops and the real item is gone, so nobody can pick it up from the ground, and a restart or a chunk unload cannot lose anything.
 
-It costs one display entity per item in flight, capped by `animation.max-flying` (past that, items go in without it), and nothing when no player is near the chunk. The client does the movement, the server teleports each display twice. The task only runs while something is flying.
+In `config.yml`: `animation.enabled: false` turns it off, `animation.ground-time` is the seconds an item lies there (3 by default), `animation.max-flying` caps how many are animated at once, and `animation.sound` turns the pickup sound off.
+
+Cost: one display entity per animated item, and the server sends about one teleport every three ticks for each. The client does the smoothing. Past `max-flying`, and when no player is near the chunk, items go in without the animation. The task only runs while something is animating.
 
 ## Selling
 

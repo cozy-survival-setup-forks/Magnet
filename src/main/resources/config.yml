@@ -39,13 +39,14 @@ sell-custom-items: false
 # Seconds between sales for collectors that have autosell turned on
 autosell-interval: 30
 
-# The pull animation: dropped items lift off, swoop over and shrink into the collector.
-# It is only a visual, the items are already in the collector. Set enabled to false to turn it off.
+# The pull animation. A dropped item falls to the ground, lies there for a moment, floats up, circles
+# the collector and gets swallowed. It is only a visual, the item is already in the collector when it
+# drops (nobody can pick it up from the ground). Set enabled to false to turn it off.
 animation:
   enabled: true
-  # How long one item takes to arrive, in ticks (20 = one second). 12 to 24 reads well.
-  duration: 16
-  # Most items in flight at once. Past this, items go in without the animation.
-  max-flying: 100
-  # A soft pickup sound when items arrive
+  # Seconds an item lies on the ground before it floats up (0 to 30)
+  ground-time: 3
+  # Most items animated at once, counting the ones lying on the ground. Past this, items go in without it.
+  max-flying: 80
+  # A soft pickup sound when items are swallowed
   sound: true
