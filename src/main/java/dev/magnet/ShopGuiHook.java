@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import net.brcdev.shopgui.ShopGuiPlusApi;
 import org.bukkit.OfflinePlayer;

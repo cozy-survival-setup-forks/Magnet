@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -25,7 +25,7 @@ public final class Menu implements InventoryHolder {
     private static final int ITEM_SLOTS = 45;
     private static final int PREV = 45, INFO = 49, NEXT = 53, SELL = 47, AUTOSELL = 48, WITHDRAW_ALL = 51;
 
-    private final MagpiePlugin plugin;
+    private final MagnetPlugin plugin;
     private final Collector collector;
     private final Player viewer;
     private final OfflinePlayer owner;
@@ -33,7 +33,7 @@ public final class Menu implements InventoryHolder {
     private final List<Collector.Entry> shown = new ArrayList<>();
     private int page;
 
-    Menu(MagpiePlugin plugin, Collector collector, Player viewer) {
+    Menu(MagnetPlugin plugin, Collector collector, Player viewer) {
         this.plugin = plugin;
         this.collector = collector;
         this.viewer = viewer;

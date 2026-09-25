@@ -1,6 +1,6 @@
-name: Magpie
+name: Magnet
 version: '${version}'
-main: dev.magpie.MagpiePlugin
+main: dev.magnet.MagnetPlugin
 api-version: '1.21'
 authors: [Groovyy Roy]
 description: One collector per chunk that picks up every dropped item
@@ -9,15 +9,15 @@ softdepend:
   - ShopGUIPlus
 
 commands:
-  magpie:
+  magnet:
     description: Give collectors and reload
     aliases: [collector]
     usage: /<command> <give|reload>
 
 permissions:
-  magpie.use:
+  magnet.use:
     description: Place and use collectors
     default: true
-  magpie.admin:
+  magnet.admin:
     description: Give collectors, open anyone's collector, reload
     default: op

@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 public final class CollectorListener implements Listener {
 
-    private final MagpiePlugin plugin;
+    private final MagnetPlugin plugin;
 
     // Items the collector must leave alone: what a fishing rod pulls in, and what a player drops when they die
     private final Set<UUID> ignored = new HashSet<>();
@@ -41,7 +41,7 @@ public final class CollectorListener implements Listener {
     private World deathWorld;
     private double deathX, deathZ;
 
-    public CollectorListener(MagpiePlugin plugin) {
+    public CollectorListener(MagnetPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -69,6 +69,7 @@ public final class CollectorListener implements Listener {
 
         int taken = collector.add(stack, settings);
         if (taken == 0) return;
+        if (settings.animation) plugin.flights().launch(item, collector, stack);
 
         if (taken >= stack.getAmount()) {
             event.setCancelled(true);
@@ -103,7 +104,7 @@ public final class CollectorListener implements Listener {
         Block block = event.getBlockPlaced();
         Messages messages = plugin.messages();
 
-        if (!player.hasPermission("magpie.use")) {
+        if (!player.hasPermission("magnet.use")) {
             event.setCancelled(true);
             messages.send(player, "no-permission");
         } else if (plugin.settings().disabledWorlds.contains(block.getWorld().getName())) {

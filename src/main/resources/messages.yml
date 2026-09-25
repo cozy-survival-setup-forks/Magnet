@@ -1,6 +1,6 @@
 # MiniMessage (<red>text</red>) and old codes (&7, &#ff8800). <placeholders> are filled in. Empty turns a message off.
 
-prefix: "<#F5C542><bold>MAGPIE </bold><#B6C1C8>⏵ <white>"
+prefix: "<#F5C542><bold>MAGNET </bold><#B6C1C8>⏵ <white>"
 
 placed: "Collector placed. It now collects every item that drops in this chunk."
 broken: "Collector picked up."
@@ -14,7 +14,7 @@ sold: "Sold <#F5C542><items> <white>items for <#F5C542><money><white>."
 autosold: "Your collector sold <#F5C542><items> <white>items for <#F5C542><money><white>."
 
 no-permission: "<red>You do not have permission."
-usage: "<red>Usage: /magpie <give <player> [amount]|reload>"
+usage: "<red>Usage: /magnet <give <player> [amount]|reload>"
 player-not-found: "<red><player> is not online."
 gave: "Gave <#F5C542><amount> <white>collector(s) to <#F5C542><player><white>."
 reloaded: "Reloaded."

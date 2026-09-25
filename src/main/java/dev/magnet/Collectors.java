@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;

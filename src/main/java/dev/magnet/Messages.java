@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -34,10 +34,10 @@ public final class Messages {
             Map.entry('k', "obfuscated"), Map.entry('l', "bold"), Map.entry('m', "strikethrough"),
             Map.entry('n', "underlined"), Map.entry('o', "italic"), Map.entry('r', "reset"));
 
-    private final MagpiePlugin plugin;
+    private final MagnetPlugin plugin;
     private FileConfiguration file = new YamlConfiguration();
 
-    public Messages(MagpiePlugin plugin) {
+    public Messages(MagnetPlugin plugin) {
         this.plugin = plugin;
     }
 

@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
@@ -25,7 +25,7 @@ public final class Sales {
     /** What a sale gave. */
     public record Sale(long items, double money) {}
 
-    private final MagpiePlugin plugin;
+    private final MagnetPlugin plugin;
     private final Map<Material, Double> prices = new EnumMap<>(Material.class);
     private Economy economy;
     /** Prices by kind of item, so the menu does not ask ShopGUI+ for every item every second. Cleared once a minute. */
@@ -33,7 +33,7 @@ public final class Sales {
     private ShopGuiHook shop;
     private boolean shopFailed;
 
-    Sales(MagpiePlugin plugin) {
+    Sales(MagnetPlugin plugin) {
         this.plugin = plugin;
     }
 

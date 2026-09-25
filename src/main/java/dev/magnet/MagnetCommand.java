@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -11,12 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** /magpie give <player> [amount], /magpie reload. */
-final class MagpieCommand implements TabExecutor {
+/** /magnet give <player> [amount], /magnet reload. */
+final class MagnetCommand implements TabExecutor {
 
-    private final MagpiePlugin plugin;
+    private final MagnetPlugin plugin;
 
-    MagpieCommand(MagpiePlugin plugin) {
+    MagnetCommand(MagnetPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -25,8 +25,8 @@ final class MagpieCommand implements TabExecutor {
         Messages messages = plugin.messages();
         String sub = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
 
-        if (!sender.hasPermission("magpie.admin") || (!sub.equals("give") && !sub.equals("reload"))) {
-            if (sender.hasPermission("magpie.admin")) messages.send(sender, "usage");
+        if (!sender.hasPermission("magnet.admin") || (!sub.equals("give") && !sub.equals("reload"))) {
+            if (sender.hasPermission("magnet.admin")) messages.send(sender, "usage");
             else messages.send(sender, "no-permission");
             return true;
         }
@@ -66,7 +66,7 @@ final class MagpieCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String @NotNull [] args) {
         List<String> options = new ArrayList<>();
-        if (!sender.hasPermission("magpie.admin")) return options;
+        if (!sender.hasPermission("magnet.admin")) return options;
 
         if (args.length == 1) {
             options.add("give");

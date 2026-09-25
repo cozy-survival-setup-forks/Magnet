@@ -1,4 +1,4 @@
-# Magpie. Place a collector and it picks up every item that drops in its chunk. Reload with /magpie reload.
+# Magnet. Place a collector and it picks up every item that drops in its chunk. Reload with /magnet reload.
 # The texts are in messages.yml, the prices for selling are in prices.yml.
 
 # The block a collector is made of
@@ -34,3 +34,14 @@ price-source: AUTO
 sell-custom-items: false
 # Seconds between sales for collectors that have autosell turned on
 autosell-interval: 30
+
+# The pull animation: dropped items lift off, swoop over and shrink into the collector.
+# It is only a visual, the items are already in the collector. Set enabled to false to turn it off.
+animation:
+  enabled: true
+  # How long one item takes to arrive, in ticks (20 = one second). 12 to 24 reads well.
+  duration: 16
+  # Most items in flight at once. Past this, items go in without the animation.
+  max-flying: 100
+  # A soft pickup sound when items arrive
+  sound: true

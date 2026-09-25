@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -13,16 +13,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 
 /**
- * Magpie: one collector per chunk that picks up every item dropped in that chunk, from mobs, farms, blocks or
+ * Magnet: one collector per chunk that picks up every item dropped in that chunk, from mobs, farms, blocks or
  * anything else, keeps them as counts and lets the owner take or sell them.
  */
-public final class MagpiePlugin extends JavaPlugin implements Listener {
+public final class MagnetPlugin extends JavaPlugin implements Listener {
 
     private Settings settings;
     private Messages messages;
     private Collectors collectors;
     private Items items;
     private Sales sales;
+    private Flights flights;
 
     @Override
     public void onEnable() {
@@ -32,6 +33,7 @@ public final class MagpiePlugin extends JavaPlugin implements Listener {
         settings = Settings.from(getConfig(), this);
         items = new Items(this);
         sales = new Sales(this);
+        flights = new Flights(this);
         sales.load();
 
         collectors = new Collectors(new Storage(new File(getDataFolder(), "collectors.db"), getLogger()));
@@ -46,8 +48,8 @@ public final class MagpiePlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(new CollectorListener(this), this);
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        PluginCommand command = getCommand("magpie");
-        MagpieCommand executor = new MagpieCommand(this);
+        PluginCommand command = getCommand("magnet");
+        MagnetCommand executor = new MagnetCommand(this);
         command.setExecutor(executor);
         command.setTabCompleter(executor);
 
@@ -60,6 +62,7 @@ public final class MagpiePlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (flights != null) flights.clear();
         if (collectors != null) collectors.close();
     }
 
@@ -86,12 +89,16 @@ public final class MagpiePlugin extends JavaPlugin implements Listener {
         return items;
     }
 
+    public Flights flights() {
+        return flights;
+    }
+
     public Sales sales() {
         return sales;
     }
 
     public boolean canUse(Player player, Collector collector) {
-        return collector.owner.equals(player.getUniqueId()) || player.hasPermission("magpie.admin");
+        return collector.owner.equals(player.getUniqueId()) || player.hasPermission("magnet.admin");
     }
 
     public void open(Player player, Collector collector) {

@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import java.io.File;
 import java.sql.Connection;
@@ -29,7 +29,7 @@ final class Storage {
     private final Logger log;
     private final String url;
     private final ExecutorService thread = Executors.newSingleThreadExecutor(runnable -> {
-        Thread t = new Thread(runnable, "Magpie-Storage");
+        Thread t = new Thread(runnable, "Magnet-Storage");
         t.setDaemon(true);
         return t;
     });

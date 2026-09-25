@@ -1,1 +1,1 @@
-rootProject.name = "Magpie"
+rootProject.name = "Magnet"

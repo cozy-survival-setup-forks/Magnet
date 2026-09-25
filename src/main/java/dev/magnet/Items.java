@@ -1,4 +1,4 @@
-package dev.magpie;
+package dev.magnet;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -13,10 +13,10 @@ import java.util.List;
 /** The collector item. It is recognised by a tag on the item, so renaming it in an anvil does not break it. */
 public final class Items {
 
-    private final MagpiePlugin plugin;
+    private final MagnetPlugin plugin;
     private final NamespacedKey tag;
 
-    Items(MagpiePlugin plugin) {
+    Items(MagnetPlugin plugin) {
         this.plugin = plugin;
         this.tag = new NamespacedKey(plugin, "collector");
     }

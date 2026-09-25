@@ -2,7 +2,7 @@ plugins {
     java
 }
 
-group = "dev.magpie"
+group = "dev.magnet"
 version = property("pluginVersion") as String
 
 repositories {
@@ -46,6 +46,6 @@ tasks {
     }
 
     jar {
-        archiveFileName = "Magpie-${project.version}.jar"
+        archiveFileName = "Magnet-${project.version}.jar"
     }
 }
