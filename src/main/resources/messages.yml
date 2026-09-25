@@ -1,0 +1,50 @@
+# MiniMessage (<red>text</red>) and old codes (&7, &#ff8800). <placeholders> are filled in. Empty turns a message off.
+
+prefix: "<#F5C542><bold>MAGPIE </bold><#B6C1C8>⏵ <white>"
+
+placed: "Collector placed. It now collects every item that drops in this chunk."
+broken: "Collector picked up."
+chunk-taken: "<red>This chunk already has a collector."
+disabled-world: "<red>Collectors cannot be used in this world."
+not-yours: "<red>This is not your collector."
+not-empty: "<red>Empty the collector before you break it."
+inventory-full: "<red>Your inventory is full."
+nothing-to-sell: "Nothing in the collector can be sold."
+sold: "Sold <#F5C542><items> <white>items for <#F5C542><money><white>."
+autosold: "Your collector sold <#F5C542><items> <white>items for <#F5C542><money><white>."
+
+no-permission: "<red>You do not have permission."
+usage: "<red>Usage: /magpie <give <player> [amount]|reload>"
+player-not-found: "<red><player> is not online."
+gave: "Gave <#F5C542><amount> <white>collector(s) to <#F5C542><player><white>."
+reloaded: "Reloaded."
+
+# The window
+menu-title: "<dark_gray>Chunk Collector"
+menu-prev: "<yellow>Previous page <gray>(<page>/<pages>)"
+menu-next: "<yellow>Next page <gray>(<page>/<pages>)"
+menu-info-name: "<#F5C542><bold>Collector"
+menu-info-lore:
+  - "<gray>Owner: <white><owner>"
+  - "<gray>Items: <white><items>"
+  - "<gray>Kinds: <white><types>"
+  - "<gray>Page: <white><page>/<pages>"
+menu-withdraw-name: "<green>Take everything"
+menu-withdraw-lore:
+  - "<gray>Moves all items to your inventory"
+  - "<gray>until it is full."
+menu-sell-name: "<gold>Sell everything"
+menu-sell-lore:
+  - "<gray>Worth right now: <white><worth>"
+menu-autosell-on: "<green>Autosell: on"
+menu-autosell-off: "<red>Autosell: off"
+menu-autosell-lore:
+  - "<gray>Sells every <white><seconds> <gray>seconds."
+  - "<gray>Click to switch."
+
+# Added to each stored item
+item-stored: "<gray>Stored: <white><amount>"
+item-worth: "<gray>Worth: <gold><worth>"
+item-actions:
+  - "<dark_gray>Click: take a stack"
+  - "<dark_gray>Shift click: take all"

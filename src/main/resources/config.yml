@@ -1,0 +1,36 @@
+# Magpie. Place a collector and it picks up every item that drops in its chunk. Reload with /magpie reload.
+# The texts are in messages.yml, the prices for selling are in prices.yml.
+
+# The block a collector is made of
+block: LODESTONE
+
+# The collector item
+item:
+  name: "<green><bold>Chunk Collector"
+  lore:
+    - "<gray>Place it to collect every item"
+    - "<gray>that drops in this chunk."
+    - "<gray>One per chunk. Right click to open."
+  glow: true
+
+# Worlds where collectors cannot be placed
+disabled-worlds: []
+
+# Items a collector leaves on the ground
+blacklist: []
+
+# Collect items that have a name, lore or enchantments
+collect-custom-items: true
+
+# How many different items one collector can hold, and how many items in total (0 = no limit)
+max-types: 200
+max-items: 0
+
+# Selling needs Vault and an economy plugin.
+# Prices come from ShopGUI+ when it is installed, and from prices.yml.
+# AUTO asks ShopGUI+ first and prices.yml for what it does not have, SHOPGUIPLUS and FILE use only that one.
+price-source: AUTO
+# Sell items that have a name, lore or enchantments (their price is the price of the plain item)
+sell-custom-items: false
+# Seconds between sales for collectors that have autosell turned on
+autosell-interval: 30
