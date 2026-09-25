@@ -1,8 +1,6 @@
 package dev.magnet;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
-import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -10,23 +8,26 @@ import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
-import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
- * The pull animation. The real item is already counted and gone, so this is only a visual: an item display falls
- * to the ground, lies there for a while, floats up, circles the collector and shrinks into it. The client does the
- * moving (teleport and transform interpolation), the server sends a teleport about every three ticks, and the
- * task only runs while something is animating.
+ * The pull animation. The item is already counted when it drops, so everything here is a visual.
+ *
+ * 1. The real item plays its own drop (a mob's pop, a block breaking, a fall) as a "ghost": nobody can pick it up,
+ *    it cannot merge and it is never saved, so it can neither be stolen nor survive a restart.
+ * 2. Once it has lain on the ground for a while, it is swapped for an item display that floats up, circles the
+ *    collector and shrinks into it. The client does the moving (teleport and transform interpolation), the server
+ *    sends a teleport about every three ticks, and the task only runs while something is animating.
  */
 public final class Flights implements Runnable {
 
@@ -35,24 +36,35 @@ public final class Flights implements Runnable {
     private static final int STEP_TICKS = 3;
     private static final int SWALLOW_TICKS = 4;
     private static final int SPIN_TICKS = 20;
+    private static final int LANDING_PATIENCE = 140; // ticks it may take to land before it lifts off anyway
     private static final double ORBIT_RADIUS = 1.4;
     private static final double END_RADIUS = 0.35;
 
-    private enum Stage { FALL, REST, RISE, APPROACH, ORBIT, SWALLOW, DONE }
+    private static final class Ghost {
+        final Item item;
+        final Collector collector;
+        final int born;
+        int landed = -1;
+
+        Ghost(Item item, Collector collector, int born) {
+            this.item = item;
+            this.collector = collector;
+            this.born = born;
+        }
+    }
+
+    private enum Stage { RISE, APPROACH, ORBIT, SWALLOW, DONE }
 
     private static final class Flight {
         final ItemDisplay display;
         final Collector collector;
-        final double gx, gy, gz; // where it lies on the ground
+        final double gx, gy, gz; // where it lay
         final double cx, cy, cz; // the middle of the collector
-        final int fallTicks;
-        final int groundTicks;
-        Stage stage = Stage.FALL;
-        int age, nextAt = 1, restEnd, step;
-        float spin;
+        Stage stage = Stage.RISE;
+        int age, nextAt = 1, step;
         double angle;
 
-        Flight(ItemDisplay display, Collector collector, double gx, double gy, double gz, int fallTicks, int groundTicks) {
+        Flight(ItemDisplay display, Collector collector, double gx, double gy, double gz) {
             this.display = display;
             this.collector = collector;
             this.gx = gx;
@@ -61,12 +73,12 @@ public final class Flights implements Runnable {
             this.cx = collector.x + 0.5;
             this.cy = collector.y + 0.5;
             this.cz = collector.z + 0.5;
-            this.fallTicks = fallTicks;
-            this.groundTicks = groundTicks;
         }
     }
 
     private final MagnetPlugin plugin;
+    private final List<Ghost> ghosts = new ArrayList<>();
+    private final Set<UUID> ghostIds = new HashSet<>();
     private final List<Flight> flying = new ArrayList<>();
     private BukkitTask task;
     private int soundTick = -1;
@@ -75,44 +87,51 @@ public final class Flights implements Runnable {
         this.plugin = plugin;
     }
 
-    void launch(Item item, Collector collector, ItemStack stack) {
-        Settings settings = plugin.settings();
-        if (flying.size() >= settings.animationMax) return;
+    /** True for the harmless copies that lie on the ground until they lift off. */
+    boolean isGhost(Item item) {
+        return !ghostIds.isEmpty() && ghostIds.contains(item.getUniqueId());
+    }
 
-        World world = item.getWorld();
-        // Nobody close enough to see it, so nothing to draw
-        if (world.getPlayersSeeingChunk(collector.x >> 4, collector.z >> 4).isEmpty()) return;
+    /**
+     * Keeps the spawning item as a ghost that plays out its own drop. Returns false when it should not be
+     * animated (too many already, nobody near), and the caller removes the item instead.
+     */
+    boolean ghost(Item item, Collector collector) {
+        if (ghosts.size() + flying.size() >= plugin.settings().animationMax) return false;
+        if (item.getWorld().getPlayersSeeingChunk(collector.x >> 4, collector.z >> 4).isEmpty()) return false;
 
-        Location start = item.getLocation().add(0, 0.25, 0);
-        RayTraceResult hit = world.rayTraceBlocks(start, new Vector(0, -1, 0), 48, FluidCollisionMode.NEVER, true);
-        if (hit == null) return;
-
-        double groundY = hit.getHitPosition().getY() + 0.25;
-        double height = start.getY() - groundY;
-        int fall = 0;
-        if (height < 0.3) {
-            start.setY(groundY);
-        } else {
-            // Items fall at 0.04 blocks per tick squared, the display flies a straight line down in that time
-            fall = Math.max(3, Math.min(59, (int) Math.ceil(Math.sqrt(2 * height / 0.04) * 1.05)));
-        }
-
-        ItemDisplay display = world.spawn(start, ItemDisplay.class, d -> {
-            d.setItemStack(stack.asOne());
-            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND);
-            d.setTransformation(transform(0f, 1f));
-            d.setBrightness(new Display.Brightness(15, 15)); // stays visible in dark farms
-            d.setViewRange(0.5f);
-            d.setPersistent(false);
-            d.setInvulnerable(true);
-        });
-        flying.add(new Flight(display, collector, start.getX(), groundY, start.getZ(), fall, settings.animationGround));
+        item.setPickupDelay(Short.MAX_VALUE); // players and mobs cannot take it, and items with this delay do not merge
+        item.setPersistent(false);
+        item.setInvulnerable(true);
+        ghosts.add(new Ghost(item, collector, Bukkit.getCurrentTick()));
+        ghostIds.add(item.getUniqueId());
 
         if (task == null) task = Bukkit.getScheduler().runTaskTimer(plugin, this, 1L, 1L);
+        return true;
     }
 
     @Override
     public void run() {
+        int now = Bukkit.getCurrentTick();
+        int lie = plugin.settings().animationGround;
+
+        for (Iterator<Ghost> it = ghosts.iterator(); it.hasNext(); ) {
+            Ghost g = it.next();
+            Item item = g.item;
+            if (!item.isValid()) {
+                ghostIds.remove(item.getUniqueId());
+                it.remove();
+                continue;
+            }
+
+            if (g.landed < 0 && (item.isOnGround() || now - g.born > LANDING_PATIENCE)) g.landed = now;
+            if (g.landed < 0 || now - g.landed < lie) continue;
+
+            ghostIds.remove(item.getUniqueId());
+            it.remove();
+            liftOff(g);
+        }
+
         for (Iterator<Flight> it = flying.iterator(); it.hasNext(); ) {
             Flight f = it.next();
             if (!f.display.isValid()) {
@@ -127,41 +146,46 @@ public final class Flights implements Runnable {
             }
         }
 
-        if (flying.isEmpty()) {
+        if (ghosts.isEmpty() && flying.isEmpty()) {
             task.cancel();
             task = null;
         }
+    }
+
+    /** Swaps the item lying on the ground for a display of it. */
+    private void liftOff(Ghost g) {
+        Item item = g.item;
+        Collector collector = g.collector;
+        Location at = item.getLocation().add(0, 0.25, 0);
+        ItemDisplay display = null;
+
+        // It may have drifted off in water, or the collector may be gone. Then it just disappears.
+        boolean near = at.getWorld().getUID().equals(collector.world) && Math.hypot(at.getX() - collector.x, at.getZ() - collector.z) < 48;
+        if (near && plugin.collectors().at(at.getWorld(), collector.x, collector.z) == collector) {
+            display = at.getWorld().spawn(at, ItemDisplay.class, d -> {
+                d.setItemStack(item.getItemStack().asOne());
+                d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND);
+                d.setTransformation(transform(0f, 1f));
+                d.setBrightness(new Display.Brightness(15, 15)); // stays visible in dark farms
+                d.setViewRange(0.5f);
+                d.setPersistent(false);
+                d.setInvulnerable(true);
+            });
+        }
+        item.remove();
+        if (display != null) flying.add(new Flight(display, collector, at.getX(), at.getY(), at.getZ()));
     }
 
     /** Does what the flight's current stage says and schedules the next one. Returns true when it is over. */
     private boolean step(Flight f) {
         ItemDisplay display = f.display;
         switch (f.stage) {
-            case FALL -> {
-                if (f.fallTicks > 0) {
-                    display.setTeleportDuration(f.fallTicks);
-                    display.teleport(new Location(display.getWorld(), f.gx, f.gy, f.gz));
-                }
-                f.nextAt = f.age + f.fallTicks;
-                f.restEnd = f.nextAt + f.groundTicks;
-                f.stage = Stage.REST;
-            }
-            case REST -> {
-                if (f.age >= f.restEnd) {
-                    f.stage = Stage.RISE;
-                    f.nextAt = f.age;
-                } else {
-                    // A slow turn while it lies there, half a turn every second
-                    turn(f, 3.0f, SPIN_TICKS);
-                    f.nextAt = Math.min(f.age + SPIN_TICKS, f.restEnd);
-                }
-            }
             case RISE -> {
-                display.setGlowing(true);
-                display.setGlowColorOverride(Color.fromRGB(0xF5C542));
                 display.setTeleportDuration(RISE_TICKS);
                 display.teleport(new Location(display.getWorld(), f.gx, f.gy + 1.1, f.gz));
-                turn(f, 3.0f, RISE_TICKS);
+                display.setTransformation(transform(3.0f, 1f)); // half a turn on the way up
+                display.setInterpolationDelay(0);
+                display.setInterpolationDuration(RISE_TICKS);
                 f.nextAt = f.age + RISE_TICKS;
                 f.stage = Stage.APPROACH;
             }
@@ -192,7 +216,7 @@ public final class Flights implements Runnable {
             case SWALLOW -> {
                 display.setTeleportDuration(SWALLOW_TICKS);
                 display.teleport(new Location(display.getWorld(), f.cx, f.cy, f.cz));
-                display.setTransformation(transform(f.spin + 3.0f, 0.1f));
+                display.setTransformation(transform(6.0f, 0.1f));
                 display.setInterpolationDelay(0);
                 display.setInterpolationDuration(SWALLOW_TICKS);
                 f.nextAt = f.age + SWALLOW_TICKS + 1;
@@ -204,13 +228,6 @@ public final class Flights implements Runnable {
             }
         }
         return false;
-    }
-
-    private static void turn(Flight f, float radians, int ticks) {
-        f.spin += radians;
-        f.display.setTransformation(transform(f.spin, 1f));
-        f.display.setInterpolationDelay(0);
-        f.display.setInterpolationDuration(ticks);
     }
 
     private static Transformation transform(float rotation, float scale) {
@@ -227,8 +244,12 @@ public final class Flights implements Runnable {
         }
     }
 
+    /** Removes everything on screen. The items are already in their collectors, so nothing is lost. */
     void clear() {
-        for (Flight flight : flying) flight.display.remove();
+        for (Ghost g : ghosts) g.item.remove();
+        for (Flight f : flying) f.display.remove();
+        ghosts.clear();
+        ghostIds.clear();
         flying.clear();
         if (task != null) {
             task.cancel();

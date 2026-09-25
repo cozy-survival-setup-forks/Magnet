@@ -16,7 +16,9 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -71,14 +73,25 @@ public final class CollectorListener implements Listener {
 
         int taken = collector.add(stack, settings);
         if (taken == 0) return;
-        if (settings.animation) plugin.flights().launch(item, collector, stack);
 
         if (taken >= stack.getAmount()) {
-            event.setCancelled(true);
+            // With the animation the item stays as an untouchable copy that plays out its own drop
+            if (!settings.animation || !plugin.flights().ghost(item, collector)) event.setCancelled(true);
         } else {
             stack.setAmount(stack.getAmount() - taken); // the collector was full, the rest drops as usual
             item.setItemStack(stack);
         }
+    }
+
+    // Hoppers and mobs must not take the copies that are only there for the animation
+    @EventHandler(ignoreCancelled = true)
+    public void onHopperPickup(InventoryPickupItemEvent event) {
+        if (plugin.flights().isGhost(event.getItem())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent event) {
+        if (plugin.flights().isGhost(event.getItem())) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

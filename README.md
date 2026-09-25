@@ -13,11 +13,13 @@ Explosions and pistons cannot move a collector. Items a player threw with Q, the
 
 ## The pull animation
 
-Items that drop in the chunk fall to the ground and lie there for a few seconds, then float up, circle the collector once and shrink into it, so players can see what is collecting. It is only a visual. The item is counted the moment it drops and the real item is gone, so nobody can pick it up from the ground, and a restart or a chunk unload cannot lose anything.
+Items that drop in the chunk play their normal drop (the pop out of a broken block, a mob's drop, a throw), lie on the ground for a few seconds, then float up, circle the collector once and shrink into it, so players can see what is collecting.
 
-In `config.yml`: `animation.enabled: false` turns it off, `animation.ground-time` is the seconds an item lies there (3 by default), `animation.max-flying` caps how many are animated at once, and `animation.sound` turns the pickup sound off.
+It is only a visual. The item is counted the moment it drops. The copy on the ground cannot be picked up by players, mobs or hoppers, cannot merge with other items and is never saved, so nothing can be stolen or duplicated, and a restart or chunk unload cannot lose anything.
 
-Cost: one display entity per animated item, and the server sends about one teleport every three ticks for each. The client does the smoothing. Past `max-flying`, and when no player is near the chunk, items go in without the animation. The task only runs while something is animating.
+In `config.yml`: `animation.enabled: false` turns it off (items then go in instantly), `animation.ground-time` is the seconds an item lies there after landing (3 by default), `animation.max-flying` caps how many are animated at once, and `animation.sound` turns the pickup sound off.
+
+Cost: one real item and later one display entity per animated item, and the server sends about one teleport every three ticks for each display. Past `max-flying`, and when no player is near the chunk, items go in without the animation. The task only runs while something is animating.
 
 ## Selling
 
