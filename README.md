@@ -21,6 +21,12 @@ In `config.yml`: `animation.enabled: false` turns it off (items then go in insta
 
 Cost: one real item and later one display entity per animated item, and the server sends about one teleport every three ticks for each display. Past `max-flying`, and when no player is near the chunk, items go in without the animation. The task only runs while something is animating.
 
+## The hologram
+
+Each collector has a text above it that shows what it holds. It is a text display, so no hologram plugin is needed. It only exists while the chunk is loaded, is never saved, and is only rewritten when the contents change.
+
+Everything is in the `hologram` section of `config.yml`: the lines (MiniMessage and `&` codes, with `<items>`, `<types>`, `<owner>` and `<worth>`), the height, the size, the shadow, the background (`transparent` by default, or `#AARRGGBB`), whether it can be seen through blocks, how far away it can be seen, and `enabled: false` to turn it off. `/magnet reload` applies changes.
+
 ## Selling
 
 Needs Vault and an economy plugin. Prices come from ShopGUI+ when it is installed, so what your shop pays is what the collector pays, including the owner's multipliers while they are online. Anything ShopGUI+ has no price for falls back to `prices.yml`. `price-source` in `config.yml` can be set to `SHOPGUIPLUS` or `FILE` to use only one. Items with a name or enchantments sell only if `sell-custom-items` is on. With autosell on, the collector sells every `autosell-interval` seconds and pays the owner.
@@ -36,7 +42,7 @@ Needs Vault and an economy plugin. Prices come from ShopGUI+ when it is installe
 
 | File | What is in it |
 | --- | --- |
-| `config.yml` | the block, the item, disabled worlds, blacklist, limits, price source, autosell interval, the animation |
+| `config.yml` | the block, the item, disabled worlds, blacklist, limits, price source, autosell interval, the animation, the hologram |
 | `messages.yml` | every text and the window, MiniMessage and `&` codes |
 | `prices.yml` | fallback sell prices |
 

@@ -50,3 +50,27 @@ animation:
   max-flying: 80
   # A soft pickup sound when items are swallowed
   sound: true
+
+# The text above a collector, a text display so it needs no other plugin. Change anything here and /magnet reload.
+hologram:
+  enabled: true
+  # Blocks above the top of the collector block
+  height: 0.6
+  # Size of the text, 1 is normal
+  scale: 1.0
+  # The shadow behind every letter
+  shadow: true
+  # Whether the text can be seen through blocks
+  see-through: false
+  # transparent, or a colour with its opacity: #AARRGGBB (#80000000 is half black), or #RRGGBB for a light one
+  background: transparent
+  # How far away players can see it, in blocks
+  view-distance: 24
+  # How often the text is checked for changes, in seconds. It is only rewritten when the contents changed.
+  update-seconds: 2
+  # One entry per line. MiniMessage and & codes work.
+  # <items> how many items, <types> how many kinds, <owner> the owner's name, <worth> what it would sell for
+  lines:
+    - "<#F5C542><bold>Chunk Collector"
+    - "<gray>Items: <white><items>"
+    - "<gray>Kinds: <white><types>"

@@ -25,6 +25,15 @@ public final class Settings {
     public final int animationGround;
     public final int animationMax;
     public final boolean animationSound;
+    public final boolean hologram;
+    public final double hologramHeight;
+    public final float hologramScale;
+    public final boolean hologramShadow;
+    public final boolean hologramSeeThrough;
+    public final org.bukkit.Color hologramBackground;
+    public final int hologramViewDistance;
+    public final int hologramSeconds;
+    public final java.util.List<String> hologramLines;
 
     private Settings(FileConfiguration config, MagnetPlugin plugin) {
         Material material = Material.matchMaterial(config.getString("block", "LODESTONE").toUpperCase(Locale.ROOT));
@@ -53,6 +62,17 @@ public final class Settings {
         animationGround = 20 * Math.max(0, Math.min(30, config.getInt("animation.ground-time", 3)));
         animationMax = Math.max(1, config.getInt("animation.max-flying", 80));
         animationSound = config.getBoolean("animation.sound", true);
+
+        hologram = config.getBoolean("hologram.enabled", true);
+        hologramHeight = Math.max(0, Math.min(10, config.getDouble("hologram.height", 0.6)));
+        hologramScale = (float) Math.max(0.2, Math.min(5, config.getDouble("hologram.scale", 1.0)));
+        hologramShadow = config.getBoolean("hologram.shadow", true);
+        hologramSeeThrough = config.getBoolean("hologram.see-through", false);
+        hologramBackground = Holograms.parseBackground(config.getString("hologram.background", "transparent"));
+        hologramViewDistance = Math.max(4, config.getInt("hologram.view-distance", 24));
+        hologramSeconds = Math.max(1, config.getInt("hologram.update-seconds", 2));
+        java.util.List<String> lines = config.getStringList("hologram.lines");
+        hologramLines = lines.isEmpty() ? java.util.List.of("<#F5C542><bold>Chunk Collector", "<gray>Items: <white><items>") : lines;
     }
 
     public static Settings from(FileConfiguration config, MagnetPlugin plugin) {

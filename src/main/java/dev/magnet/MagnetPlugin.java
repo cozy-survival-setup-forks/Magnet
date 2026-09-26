@@ -24,6 +24,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
     private Items items;
     private Sales sales;
     private Flights flights;
+    private Holograms holograms;
 
     @Override
     public void onEnable() {
@@ -34,6 +35,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         items = new Items(this);
         sales = new Sales(this);
         flights = new Flights(this);
+        holograms = new Holograms(this);
         sales.load();
 
         collectors = new Collectors(new Storage(new File(getDataFolder(), "collectors.db"), getLogger()));
@@ -47,6 +49,8 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
 
         Bukkit.getPluginManager().registerEvents(new CollectorListener(this), this);
         Bukkit.getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(holograms, this);
+        holograms.start();
 
         PluginCommand command = getCommand("magnet");
         MagnetCommand executor = new MagnetCommand(this);
@@ -63,6 +67,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (flights != null) flights.clear();
+        if (holograms != null) holograms.stop();
         if (collectors != null) collectors.close();
     }
 
@@ -71,6 +76,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         messages.load();
         settings = Settings.from(getConfig(), this);
         sales.load();
+        holograms.start();
     }
 
     public Settings settings() {
@@ -87,6 +93,10 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
 
     public Items items() {
         return items;
+    }
+
+    public Holograms holograms() {
+        return holograms;
     }
 
     public Flights flights() {

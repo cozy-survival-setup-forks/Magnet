@@ -135,7 +135,8 @@ public final class CollectorListener implements Listener {
     public void onPlaced(BlockPlaceEvent event) {
         if (!plugin.items().isCollector(event.getItemInHand())) return;
 
-        plugin.collectors().create(event.getBlockPlaced(), event.getPlayer().getUniqueId());
+        Collector created = plugin.collectors().create(event.getBlockPlaced(), event.getPlayer().getUniqueId());
+        plugin.holograms().show(created);
         plugin.messages().send(event.getPlayer(), "placed");
     }
 
@@ -175,6 +176,7 @@ public final class CollectorListener implements Listener {
         Collector collector = plugin.collectors().at(event.getBlock());
         if (collector == null) return;
 
+        plugin.holograms().hide(collector);
         plugin.collectors().remove(collector);
         event.setDropItems(false);
         if (event.getPlayer().getGameMode() != org.bukkit.GameMode.CREATIVE) {
