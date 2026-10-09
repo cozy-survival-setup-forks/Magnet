@@ -56,7 +56,12 @@ public final class Settings {
         maxItems = Math.max(0, config.getLong("max-items", 0));
         autosellSeconds = Math.max(5, config.getInt("autosell-interval", 30));
         sellCustom = config.getBoolean("sell-custom-items", false);
-        priceSource = config.getString("price-source", "AUTO").toUpperCase(Locale.ROOT);
+        String source = config.getString("price-source", "AUTO").toUpperCase(Locale.ROOT);
+        if (!source.equals("AUTO") && !source.equals("SHOPGUIPLUS") && !source.equals("FILE")) {
+            plugin.getLogger().warning("'price-source' in config.yml must be AUTO, SHOPGUIPLUS or FILE, using AUTO.");
+            source = "AUTO";
+        }
+        priceSource = source;
 
         animation = config.getBoolean("animation.enabled", true);
         animationGround = 20 * Math.max(0, Math.min(30, config.getInt("animation.ground-time", 3)));

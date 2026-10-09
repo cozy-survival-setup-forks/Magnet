@@ -76,6 +76,13 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimer(this, this::refreshMenus, 40L, 40L);
         scheduleAutosell();
         Metrics.start(this);
+        boolean shopGui = Bukkit.getPluginManager().isPluginEnabled("ShopGUIPlus");
+        getLogger().info("Ready: " + collectors.all().size() + " collector(s) loaded, selling "
+                + (sales.enabled() ? "on (prices from " + (settings.priceSource.equals("FILE") ? "prices.yml" : shopGui ? "ShopGUI+" + (settings.priceSource.equals("AUTO") ? " and prices.yml" : "") : "prices.yml") + ")" : "off (needs Vault and an economy plugin)")
+                + ", animation " + (settings.animation ? "on" : "off") + ", hologram " + (settings.hologram ? "on" : "off") + ".");
+        if (settings.priceSource.equals("SHOPGUIPLUS") && !shopGui) {
+            getLogger().warning("price-source is SHOPGUIPLUS but ShopGUI+ is not installed, so nothing can be sold.");
+        }
         Banner.print(this, "Thanks for keeping the drops tidy.");
     }
 
