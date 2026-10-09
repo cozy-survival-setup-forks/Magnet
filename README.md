@@ -9,13 +9,13 @@ Chunk collectors for Paper 1.21.11. Place a collector and it picks up every item
 3. Right click to open. Click an item to take a stack, shift click to take all of it. The buttons at the bottom take everything, sell everything, and turn autosell on or off.
 4. A collector must be empty before it can be broken. Breaking it gives the item back.
 
-Explosions and pistons cannot move a collector. Items a player threw with Q, the loot a player drops on death, and fishing catches are left alone. To collect thrown items too (handy for testing with your own drops), set `collect-thrown-items: true`. Items already lying in the chunk when the collector is placed are not picked up, only new drops. Item stackers like RoseStacker are fine: the collector takes the item before they merge it.
+Explosions, pistons and block-changing mobs such as the wither cannot move or break a collector. If its block is removed some other way (WorldEdit, `/setblock`, a plugin that breaks blocks without an event), the collector never keeps swallowing items it cannot give back: when it holds items the block is put back (the console says so), and an empty one is forgotten. `/magnet list` shows your collectors and where they are. Items a player threw with Q, the loot a player drops on death, and fishing catches are left alone. To collect thrown items too (handy for testing with your own drops), set `collect-thrown-items: true`. Items already lying in the chunk when the collector is placed are not picked up, only new drops. Item stackers like RoseStacker are fine: the collector takes the item before they merge it.
 
 ## The pull animation
 
 Items that drop in the chunk play their normal drop (the pop out of a broken block, a mob's drop, a throw), lie on the ground for a few seconds, then drift up toward the collector, circle it once and shrink into it, so players can see what is collecting.
 
-It is only a visual. The item is counted the moment it drops. The copy on the ground cannot be picked up by players, mobs or hoppers, cannot merge with other items and is never saved, so nothing can be stolen or duplicated, and a restart or chunk unload cannot lose anything.
+It is only a visual. The item is counted the moment it drops, and the copy on the ground carries a tag so stacking plugins never merge it into real items. The copy on the ground cannot be picked up by players, mobs or hoppers, cannot merge with other items and is never saved, so nothing can be stolen or duplicated, and a restart or chunk unload cannot lose anything.
 
 In `config.yml`: `animation.enabled: false` turns it off (items then go in instantly), `animation.ground-time` is the seconds an item lies there after landing (3 by default), `animation.max-flying` caps how many are animated at once, and `animation.sound` turns the pickup sound off.
 
@@ -29,13 +29,13 @@ Everything is in the `hologram` section of `config.yml`: the lines (MiniMessage 
 
 ## Selling
 
-Needs Vault and an economy plugin. Prices come from ShopGUI+ when it is installed, so what your shop pays is what the collector pays, including the owner's multipliers while they are online. Anything ShopGUI+ has no price for falls back to `prices.yml`. `price-source` in `config.yml` can be set to `SHOPGUIPLUS` or `FILE` to use only one. Items with a name or enchantments sell only if `sell-custom-items` is on. With autosell on, the collector sells every `autosell-interval` seconds and pays the owner.
+Needs Vault and an economy plugin. If the economy does not accept the payment, nothing is sold and the items stay in the collector. Prices come from ShopGUI+ when it is installed, so what your shop pays is what the collector pays, including the owner's multipliers while they are online. Anything ShopGUI+ has no price for falls back to `prices.yml`. `price-source` in `config.yml` can be set to `SHOPGUIPLUS` or `FILE` to use only one. Items with a name or enchantments sell only if `sell-custom-items` is on. With autosell on, the collector sells every `autosell-interval` seconds and pays the owner.
 
 ## Made to be light
 
 - Finding the collector for a dropped item is two hash lookups, and a server with no collectors does nothing on item spawn.
 - Items are counts per kind of item, not item stacks.
-- Saving happens once a minute, only for collectors that changed, on a separate thread, in one SQLite transaction (`collectors.db`).
+- Saving happens once a minute and on every world save, only for collectors that changed, on a separate thread, in one SQLite transaction (`collectors.db`). A collector is also written right after items are taken from it or sold, so a crash cannot bring them back, and a write that failed is tried again.
 - Prices are cached and refreshed once a minute.
 
 ## Config
