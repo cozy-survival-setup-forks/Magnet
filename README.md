@@ -51,6 +51,7 @@ Needs Vault and an economy plugin. Prices come from ShopGUI+ when it is installe
 | | |
 | --- | --- |
 | `/magnet give <player> [amount]`, `/collector` | `magnet.admin` (op) |
+| `/magnet list` (your own), `/magnet list <player\|all>` | `magnet.use`, naming a player or `all` needs `magnet.admin` |
 | `/magnet reload` | `magnet.admin` |
 | place and use your own collector | `magnet.use` (everyone) |
 | open anyone's collector | `magnet.admin` |

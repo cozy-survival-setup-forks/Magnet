@@ -14,10 +14,14 @@ sold: "Sold <#F5C542><items> <white>items for <#F5C542><money><white>."
 autosold: "Your collector sold <#F5C542><items> <white>items for <#F5C542><money><white>."
 
 no-permission: "<red>You do not have permission."
-usage: "<red>Usage: /magnet <give <player> [amount]|reload>"
+usage: "<red>Usage: /magnet <give <player> [amount]|list [player|all]|reload>"
 player-not-found: "<red><player> is not online."
 gave: "Gave <#F5C542><amount> <white>collector(s) to <#F5C542><player><white>."
 reloaded: "Reloaded."
+list-none: "No collectors."
+list-header: "<#F5C542><count> <white>collector(s):"
+list-line: "<gray>#<id> <white><world> <x> <y> <z> <gray>- <white><items> <gray>items, <owner>"
+list-more: "<gray>...and <more> more."
 reload-failed: "<red>A file has a mistake in it, nothing was reloaded. The console says which one."
 
 # The window

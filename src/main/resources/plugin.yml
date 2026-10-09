@@ -10,9 +10,9 @@ softdepend:
 
 commands:
   magnet:
-    description: Give collectors and reload
+    description: Give collectors, list them and reload
     aliases: [collector]
-    usage: /<command> <give|reload>
+    usage: /<command> <give|list|reload>
 
 permissions:
   magnet.use:
