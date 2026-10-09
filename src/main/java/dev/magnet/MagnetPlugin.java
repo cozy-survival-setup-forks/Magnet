@@ -75,6 +75,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimer(this, sales::clearCache, 1200L, 1200L);
         Bukkit.getScheduler().runTaskTimer(this, this::refreshMenus, 40L, 40L);
         scheduleAutosell();
+        Banner.print(this, "Thanks for keeping the drops tidy.");
     }
 
     private void scheduleAutosell() {
