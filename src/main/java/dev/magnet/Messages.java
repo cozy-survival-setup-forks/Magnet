@@ -104,10 +104,6 @@ public final class Messages {
         to.sendMessage(parse(text("prefix") + text, pairs));
     }
 
-    public String raw(String key) {
-        return file.getString(key, "");
-    }
-
     public List<String> lines(String key) {
         return file.getStringList(key);
     }

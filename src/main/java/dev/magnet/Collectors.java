@@ -116,8 +116,4 @@ public final class Collectors {
         save();
         storage.close();
     }
-
-    public World world(Collector collector) {
-        return Bukkit.getWorld(collector.world);
-    }
 }

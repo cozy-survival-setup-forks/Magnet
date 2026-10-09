@@ -137,10 +137,4 @@ public final class Sales {
         for (Collector.Entry entry : collector.entries().values()) money += unitPrice(entry.key, owner) * entry.amount;
         return money;
     }
-
-    List<String> knownPrices() {
-        List<String> names = new ArrayList<>();
-        for (Material material : prices.keySet()) names.add(material.name());
-        return names;
-    }
 }
