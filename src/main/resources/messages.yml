@@ -18,6 +18,7 @@ usage: "<red>Usage: /magnet <give <player> [amount]|reload>"
 player-not-found: "<red><player> is not online."
 gave: "Gave <#F5C542><amount> <white>collector(s) to <#F5C542><player><white>."
 reloaded: "Reloaded."
+reload-failed: "<red>A file has a mistake in it, nothing was reloaded. The console says which one."
 
 # The window
 menu-title: "<dark_gray>Chunk Collector"

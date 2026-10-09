@@ -32,8 +32,7 @@ final class MagnetCommand implements TabExecutor {
         }
 
         if (sub.equals("reload")) {
-            plugin.reload();
-            messages.send(sender, "reloaded");
+            messages.send(sender, plugin.reload() ? "reloaded" : "reload-failed");
             return true;
         }
 

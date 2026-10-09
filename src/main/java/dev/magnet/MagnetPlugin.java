@@ -11,7 +11,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.world.WorldSaveEvent;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 
@@ -28,12 +31,18 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
     private Sales sales;
     private Flights flights;
     private Holograms holograms;
+    private BukkitTask autosellTask;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         messages = new Messages(this);
-        messages.load();
+        if (!messages.load() || !configReadable()) {
+            getLogger().severe("Magnet cannot start with a broken file, so it is switching itself off. Fix the file named above, "
+                    + "or delete it to get the default one, then restart.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
         settings = Settings.from(getConfig(), this);
         items = new Items(this);
         sales = new Sales(this);
@@ -65,7 +74,23 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimer(this, collectors::save, 1200L, 1200L);
         Bukkit.getScheduler().runTaskTimer(this, sales::clearCache, 1200L, 1200L);
         Bukkit.getScheduler().runTaskTimer(this, this::refreshMenus, 40L, 40L);
-        Bukkit.getScheduler().runTaskTimer(this, this::autosell, 100L, 20L * settings.autosellSeconds);
+        scheduleAutosell();
+    }
+
+    private void scheduleAutosell() {
+        if (autosellTask != null) autosellTask.cancel();
+        autosellTask = Bukkit.getScheduler().runTaskTimer(this, this::autosell, 100L, 20L * settings.autosellSeconds);
+    }
+
+    /** Bukkit's own loader only logs a broken config.yml and carries on with an empty one, so it is checked first. */
+    private boolean configReadable() {
+        try {
+            new YamlConfiguration().load(new File(getDataFolder(), "config.yml"));
+            return true;
+        } catch (java.io.IOException | InvalidConfigurationException e) {
+            getLogger().severe("config.yml could not be read: " + e.getMessage());
+            return false;
+        }
     }
 
     @Override
@@ -75,12 +100,15 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         if (collectors != null) collectors.close();
     }
 
-    public void reload() {
+    /** @return false if a file is broken, in which case nothing changed */
+    public boolean reload() {
+        if (!configReadable() || !messages.load()) return false;
         reloadConfig();
-        messages.load();
         settings = Settings.from(getConfig(), this);
         sales.load();
         holograms.start();
+        scheduleAutosell();
+        return true;
     }
 
     public Settings settings() {

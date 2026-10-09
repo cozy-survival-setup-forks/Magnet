@@ -5,6 +5,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -41,19 +42,39 @@ public final class Messages {
         this.plugin = plugin;
     }
 
-    public void load() {
+    /**
+     * Reads messages.yml. A file with a mistake in it is refused and the texts that were loaded before stay in use.
+     *
+     * @return false if the file could not be read
+     */
+    public boolean load() {
         File target = new File(plugin.getDataFolder(), "messages.yml");
         if (!target.exists()) plugin.saveResource("messages.yml", false);
-        file = YamlConfiguration.loadConfiguration(target);
+        YamlConfiguration loaded = new YamlConfiguration();
+        try {
+            loaded.load(target);
+        } catch (java.io.IOException | InvalidConfigurationException e) {
+            plugin.getLogger().severe("messages.yml could not be read: " + e.getMessage()
+                    + " Fix the file, or delete it to get the default one.");
+            return false;
+        }
 
         // Messages added in newer versions still work with an older file.
         try (var defaults = plugin.getResource("messages.yml")) {
             if (defaults != null) {
-                file.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaults, StandardCharsets.UTF_8)));
+                loaded.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaults, StandardCharsets.UTF_8)));
             }
         } catch (java.io.IOException e) {
             plugin.getLogger().warning("Could not read the default messages.yml: " + e.getMessage());
         }
+        file = loaded;
+        return true;
+    }
+
+    /** The one-argument getString is the one that falls back on the defaults of the jar. */
+    private String text(String key) {
+        String value = file.getString(key);
+        return value == null ? "" : value;
     }
 
     /** Turns old style codes into MiniMessage tags. */
@@ -73,14 +94,14 @@ public final class Messages {
     }
 
     public Component component(String key, String... pairs) {
-        return parse(file.getString(key, ""), pairs);
+        return parse(text(key), pairs);
     }
 
     /** Sends a message with the prefix. An empty message is skipped, so any of them can be turned off. */
     public void send(CommandSender to, String key, String... pairs) {
-        String text = file.getString(key, "");
+        String text = text(key);
         if (text.isEmpty()) return;
-        to.sendMessage(parse(file.getString("prefix", "") + text, pairs));
+        to.sendMessage(parse(text("prefix") + text, pairs));
     }
 
     public String raw(String key) {
