@@ -2,7 +2,8 @@ name: Magnet
 version: '${version}'
 main: dev.magnet.MagnetPlugin
 api-version: '1.21'
-authors: [Groovyy Roy]
+authors: [Groovified]
+website: https://discord.gg/blockie
 description: One collector per chunk that picks up every dropped item
 softdepend:
   - Vault

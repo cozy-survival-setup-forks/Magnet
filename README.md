@@ -56,4 +56,10 @@ Needs Vault and an economy plugin. Prices come from ShopGUI+ when it is installe
 | place and use your own collector | `magnet.use` (everyone) |
 | open anyone's collector | `magnet.admin` |
 
-MIT license.
+## Telemetry
+
+On startup Magnet sends a small anonymous beacon (plugin name/version, server software/version, online/max player counts, and a random ID with no player data) so we know which versions are in use. Turn it off with `metrics.enabled: false` in `config.yml`.
+
+## License
+
+See `LICENSE`: free to run on your own servers, not for redistribution or resale.
