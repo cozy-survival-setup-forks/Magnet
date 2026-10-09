@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -83,17 +84,32 @@ public final class Collectors {
 
     /** Writes the collectors that changed since the last save. The saving itself happens off the main thread. */
     public void save() {
+        Set<Integer> failed = storage.takeFailed();
         List<Storage.Snapshot> changed = new ArrayList<>();
         for (Map<Long, Collector> chunks : byChunk.values()) {
             for (Collector c : chunks.values()) {
-                if (!c.dirty) continue;
+                if (!c.dirty && !failed.contains(c.id)) continue;
                 c.dirty = false;
-                List<Storage.Row> rows = new ArrayList<>(c.entries.size());
-                for (Collector.Entry e : c.entries.values()) rows.add(new Storage.Row(e.bytes, e.amount));
-                changed.add(new Storage.Snapshot(c.id, c.world, c.x, c.y, c.z, c.owner, c.autosell, rows));
+                changed.add(snapshot(c));
             }
         }
         storage.save(changed);
+    }
+
+    /**
+     * Writes one collector right away. Used after items leave it: if the server crashed after a player's inventory
+     * was saved but before this was, the items would be in both places.
+     */
+    public void saveNow(Collector c) {
+        if (!c.dirty) return;
+        c.dirty = false;
+        storage.save(List.of(snapshot(c)));
+    }
+
+    private static Storage.Snapshot snapshot(Collector c) {
+        List<Storage.Row> rows = new ArrayList<>(c.entries.size());
+        for (Collector.Entry e : c.entries.values()) rows.add(new Storage.Row(e.bytes, e.amount));
+        return new Storage.Snapshot(c.id, c.world, c.x, c.y, c.z, c.owner, c.autosell, rows);
     }
 
     void close() {

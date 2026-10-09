@@ -15,12 +15,14 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -58,6 +60,11 @@ public final class CollectorListener implements Listener {
         Item item = event.getEntity();
         Collector collector = collectors.at(item.getWorld(), item.getX(), item.getZ());
         if (collector == null) return;
+        if (plugin.blockGone(collector)) {
+            plugin.verify(collector);
+            collector = collectors.at(item.getWorld(), item.getX(), item.getZ());
+            if (collector == null) return;
+        }
 
         // Items with an infinite pickup delay (display items of other plugins) stay put, and so do things a player threw unless config allows it
         if (item.getPickupDelay() >= Short.MAX_VALUE) return;
@@ -195,6 +202,20 @@ public final class CollectorListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
         protect(event.blockList());
+    }
+
+    // The wither and other mobs that break blocks
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityChangeBlock(EntityChangeBlockEvent event) {
+        if (!plugin.collectors().isEmpty() && plugin.collectors().at(event.getBlock()) != null) event.setCancelled(true);
+    }
+
+    // A collector whose block went missing while its chunk was unloaded
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        if (plugin.collectors().isEmpty()) return;
+        Collector collector = plugin.collectors().at(event.getWorld(), event.getChunk().getX() << 4, event.getChunk().getZ() << 4);
+        if (collector != null) Bukkit.getScheduler().runTask(plugin, () -> plugin.verify(collector));
     }
 
     @EventHandler(ignoreCancelled = true)

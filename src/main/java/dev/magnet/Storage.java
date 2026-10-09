@@ -8,8 +8,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +37,8 @@ final class Storage {
         return t;
     });
     private Connection connection;
+    /** Collectors whose last write failed, so the next save tries them again. */
+    private final Set<Integer> failed = ConcurrentHashMap.newKeySet();
 
     Storage(File file, Logger log) {
         this.url = "jdbc:sqlite:" + file;
@@ -119,9 +124,17 @@ final class Storage {
                     c.setAutoCommit(true);
                 }
             } catch (SQLException ex) {
-                log.severe("Could not save collectors: " + ex.getMessage());
+                for (Snapshot s : snapshots) failed.add(s.id());
+                log.severe("Could not save collectors, will try again: " + ex.getMessage());
             }
         });
+    }
+
+    /** The collectors whose write failed since the last call. */
+    Set<Integer> takeFailed() {
+        Set<Integer> out = new HashSet<>(failed);
+        failed.removeAll(out);
+        return out;
     }
 
     void delete(int id) {

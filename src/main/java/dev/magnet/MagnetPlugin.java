@@ -2,12 +2,15 @@ package dev.magnet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -51,6 +54,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(this, this);
         Bukkit.getPluginManager().registerEvents(holograms, this);
         holograms.start();
+        Bukkit.getScheduler().runTask(this, () -> collectors.all().forEach(this::verify));
 
         PluginCommand command = getCommand("magnet");
         MagnetCommand executor = new MagnetCommand(this);
@@ -107,6 +111,31 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         return sales;
     }
 
+    /** True when the block of a collector in a loaded chunk is gone: removed with WorldEdit, /setblock or a plugin that breaks blocks without an event. */
+    boolean blockGone(Collector collector) {
+        World world = Bukkit.getWorld(collector.world);
+        if (world == null || !world.isChunkLoaded(collector.x >> 4, collector.z >> 4)) return false;
+        Block block = world.getBlockAt(collector.x, collector.y, collector.z);
+        return block.getType().isAir() || block.isLiquid();
+    }
+
+    /**
+     * A collector without its block can never be opened, so it must not keep swallowing items. If it holds items
+     * the block is put back, if it is empty the collector is forgotten.
+     */
+    void verify(Collector collector) {
+        if (!blockGone(collector) || collectors.at(Bukkit.getWorld(collector.world), collector.x, collector.z) != collector) return;
+        String where = collector.x + " " + collector.y + " " + collector.z + " in " + Bukkit.getWorld(collector.world).getName();
+        if (collector.total() == 0) {
+            holograms.hide(collector);
+            collectors.remove(collector);
+            getLogger().info("The block of the empty collector at " + where + " was gone, so the collector was removed.");
+        } else {
+            Bukkit.getWorld(collector.world).getBlockAt(collector.x, collector.y, collector.z).setType(settings.block);
+            getLogger().warning("The block of the collector at " + where + " was gone. It holds " + collector.total() + " items, so the block was put back.");
+        }
+    }
+
     public boolean canUse(Player player, Collector collector) {
         return collector.owner.equals(player.getUniqueId()) || player.hasPermission("magnet.admin");
     }
@@ -139,6 +168,7 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
 
             OfflinePlayer owner = Bukkit.getOfflinePlayer(collector.owner);
             Sales.Sale sale = sales.sell(collector, owner);
+            collectors.saveNow(collector);
             Player online = owner.getPlayer();
             if (online != null && sale.items() > 0) {
                 messages.send(online, "autosold", "items", String.valueOf(sale.items()), "money", sales.format(sale.money()));
@@ -156,6 +186,12 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         if (event.getClickedInventory() == event.getView().getTopInventory()) {
             menu.click(event.getSlot(), event.isShiftClick());
         }
+    }
+
+    // The database follows the world saves, so after a crash they never disagree about where an item is
+    @EventHandler
+    public void onWorldSave(WorldSaveEvent event) {
+        if (collectors != null) collectors.save();
     }
 
     @EventHandler

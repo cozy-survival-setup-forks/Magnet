@@ -143,6 +143,7 @@ public final class Menu implements InventoryHolder {
             collector.autosell = !collector.autosell;
             collector.dirty = true;
         }
+        plugin.collectors().saveNow(collector);
         render();
     }
 

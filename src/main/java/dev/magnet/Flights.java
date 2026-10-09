@@ -2,12 +2,16 @@ package dev.magnet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
@@ -78,6 +82,7 @@ public final class Flights implements Runnable {
     }
 
     private final MagnetPlugin plugin;
+    private final NamespacedKey ghostKey;
     private final List<Ghost> ghosts = new ArrayList<>();
     private final Set<UUID> ghostIds = new HashSet<>();
     private final List<Flight> flying = new ArrayList<>();
@@ -86,6 +91,7 @@ public final class Flights implements Runnable {
 
     Flights(MagnetPlugin plugin) {
         this.plugin = plugin;
+        this.ghostKey = new NamespacedKey(plugin, "ghost");
     }
 
     /** True for the harmless copies that lie on the ground until they lift off. */
@@ -102,6 +108,13 @@ public final class Flights implements Runnable {
         if (item.getWorld().getPlayersSeeingChunk(collector.x >> 4, collector.z >> 4).isEmpty()) return false;
 
         item.setPickupDelay(Short.MAX_VALUE); // players and mobs cannot take it, and items with this delay do not merge
+        // Stacking plugins can add a spawning item to a stack nearby and the item would exist twice. A tag on the copy
+        // makes it a different kind of item to them, so it never merges with anything real.
+        ItemStack marked = item.getItemStack();
+        ItemMeta meta = marked.getItemMeta();
+        meta.getPersistentDataContainer().set(ghostKey, PersistentDataType.BYTE, (byte) 1);
+        marked.setItemMeta(meta);
+        item.setItemStack(marked);
         item.setPersistent(false);
         item.setInvulnerable(true);
         ghosts.add(new Ghost(item, collector, Bukkit.getCurrentTick()));

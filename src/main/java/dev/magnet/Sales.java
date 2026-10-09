@@ -1,6 +1,7 @@
 package dev.magnet;
 
 import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -93,23 +94,40 @@ public final class Sales {
             }
         }
         if (price <= 0 && !settings.priceSource.equals("SHOPGUIPLUS")) price = prices.getOrDefault(one.getType(), 0.0);
-        return Math.max(0, price);
+        return Double.isFinite(price) ? Math.max(0, price) : 0;
     }
 
     /** Sells everything in the collector that has a price and pays the owner. */
     public Sale sell(Collector collector, OfflinePlayer owner) {
         if (economy == null) return new Sale(0, 0);
 
+        record Taken(Collector.Entry entry, long amount) {}
+        List<Taken> taken = new ArrayList<>();
         long items = 0;
         double money = 0;
         for (Collector.Entry entry : new ArrayList<>(collector.entries().values())) {
             double price = unitPrice(entry.key, owner);
             if (price <= 0) continue;
             long amount = collector.take(entry, entry.amount);
+            taken.add(new Taken(entry, amount));
             items += amount;
             money += price * amount;
         }
-        if (money > 0) economy.depositPlayer(owner, money);
+        if (money <= 0) return new Sale(items, money);
+
+        // If the economy does not take the payment, nothing was sold: the items go back
+        String problem = null;
+        try {
+            EconomyResponse response = economy.depositPlayer(owner, money);
+            if (!response.transactionSuccess()) problem = response.errorMessage;
+        } catch (RuntimeException ex) {
+            problem = ex.toString();
+        }
+        if (problem != null) {
+            for (Taken each : taken) collector.restore(each.entry(), each.amount());
+            plugin.getLogger().warning("The economy did not accept a payment of " + money + " to " + owner.getName() + ", nothing was sold: " + problem);
+            return new Sale(0, 0);
+        }
         return new Sale(items, money);
     }
 
