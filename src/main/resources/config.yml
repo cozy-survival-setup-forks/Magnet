@@ -74,3 +74,9 @@ hologram:
     - "<#F5C542><bold>Chunk Collector"
     - "<gray>Items: <white><items>"
     - "<gray>Kinds: <white><types>"
+
+# Anonymous usage beacon: plugin name/version, server software/version and online/max player
+# counts, nothing else. Set to false to turn it off.
+metrics:
+  enabled: true
+  interval-minutes: 45
