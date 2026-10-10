@@ -96,13 +96,39 @@ public final class Collectors {
     }
 
     /**
-     * Writes one collector right away. Used after items leave it: if the server crashed after a player's inventory
-     * was saved but before this was, the items would be in both places.
+     * Writes one collector and waits until it is on disk. Used after items leave it: if the server crashed after a
+     * player's inventory was saved but before this was, the items would be in both places.
      */
     public void saveNow(Collector c) {
         if (!c.dirty) return;
         c.dirty = false;
-        storage.save(List.of(snapshot(c)));
+        if (!storage.saveNow(snapshot(c))) c.dirty = true;
+    }
+
+    /**
+     * Writes the collector as it is now, with the record that a sale started, in one step. Call it after the items
+     * were taken and before the money is paid.
+     *
+     * @return the record id, null if it could not be written (then the sale must not go ahead)
+     */
+    String beginSale(Collector c, String detail) {
+        String record = storage.beginSale(snapshot(c), detail);
+        if (record != null) c.dirty = false;
+        return record;
+    }
+
+    void saleDone(String record) {
+        storage.saleDone(record);
+    }
+
+    /** The payment was refused and the items are back in the collector: written with the record. */
+    void saleRefused(Collector c, String record, String reason) {
+        c.dirty = false;
+        if (!storage.saleRefused(snapshot(c), record, reason)) c.dirty = true;
+    }
+
+    void saleUnknown(String record, String reason) {
+        storage.saleUnknown(record, reason);
     }
 
     private static Storage.Snapshot snapshot(Collector c) {

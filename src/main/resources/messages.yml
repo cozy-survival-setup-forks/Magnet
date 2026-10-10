@@ -1,3 +1,4 @@
+lang-version: 1
 # MiniMessage (<red>text</red>) and old codes (&7, &#ff8800). <placeholders> are filled in. Empty turns a message off.
 
 prefix: "<#F5C542><bold>MAGNET </bold><#B6C1C8>⏵ <white>"

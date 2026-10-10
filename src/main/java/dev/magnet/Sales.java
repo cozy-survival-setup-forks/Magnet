@@ -115,19 +115,40 @@ public final class Sales {
         }
         if (money <= 0) return new Sale(items, money);
 
+        // The collector without these items is written down first, together with a record of the sale, so a stop in
+        // the middle can never sell the same items twice. If it cannot be written, nothing is sold.
+        String detail = "collector=" + collector.id + " owner=" + owner.getUniqueId() + " (" + owner.getName() + ") items=" + items + " money=" + money;
+        String record = plugin.collectors().beginSale(collector, detail);
+        if (record == null) {
+            for (Taken each : taken) collector.restore(each.entry(), each.amount());
+            return new Sale(0, 0);
+        }
+
         // If the economy does not take the payment, nothing was sold: the items go back
         String problem = null;
+        boolean unsure = false;
         try {
             EconomyResponse response = economy.depositPlayer(owner, money);
             if (!response.transactionSuccess()) problem = response.errorMessage;
         } catch (RuntimeException ex) {
+            // An economy that throws may or may not have paid. That is not decided here: it is listed, never repeated.
             problem = ex.toString();
+            unsure = true;
+        }
+        if (unsure) {
+            plugin.collectors().saleUnknown(record, problem);
+            plugin.getLogger().severe("The economy failed while paying " + money + " to " + owner.getName() + " for " + items
+                    + " items of collector " + collector.id + ". It may or may not have been paid, so the items were not put back. "
+                    + "Check their balance, then see /magnet doctor: " + problem);
+            return new Sale(0, 0);
         }
         if (problem != null) {
             for (Taken each : taken) collector.restore(each.entry(), each.amount());
+            plugin.collectors().saleRefused(collector, record, problem);
             plugin.getLogger().warning("The economy did not accept a payment of " + money + " to " + owner.getName() + ", nothing was sold: " + problem);
             return new Sale(0, 0);
         }
+        plugin.collectors().saleDone(record);
         return new Sale(items, money);
     }
 

@@ -36,7 +36,7 @@ final class MagnetCommand implements TabExecutor {
             return true;
         }
 
-        if (!sender.hasPermission("magnet.admin") || (!sub.equals("give") && !sub.equals("reload"))) {
+        if (!sender.hasPermission("magnet.admin") || (!sub.equals("give") && !sub.equals("reload") && !sub.equals("doctor") && !sub.equals("backup"))) {
             if (sender.hasPermission("magnet.admin")) messages.send(sender, "usage");
             else messages.send(sender, "no-permission");
             return true;
@@ -44,6 +44,21 @@ final class MagnetCommand implements TabExecutor {
 
         if (sub.equals("reload")) {
             messages.send(sender, plugin.reload() ? "reloaded" : "reload-failed");
+            return true;
+        }
+
+        if (sub.equals("doctor")) {
+            if (args.length >= 3 && args[1].equalsIgnoreCase("resolve")) {
+                sender.sendPlainMessage(plugin.resolvePayout(args[2]) ? "Marked as handled." : "There is no unchecked sale with that id.");
+            } else {
+                plugin.doctor().forEach(sender::sendPlainMessage);
+            }
+            return true;
+        }
+
+        if (sub.equals("backup")) {
+            if (args.length < 2 || !args[1].equalsIgnoreCase("now")) sender.sendPlainMessage("Use /magnet backup now");
+            else sender.sendPlainMessage(plugin.backupNow() ? "Backup made and checked." : "The backup FAILED, see the console.");
             return true;
         }
 
@@ -135,10 +150,16 @@ final class MagnetCommand implements TabExecutor {
             if (admin) {
                 options.add("give");
                 options.add("reload");
+                options.add("doctor");
+                options.add("backup");
             }
         } else if (args.length == 2 && admin && (args[0].equalsIgnoreCase("give") || args[0].equalsIgnoreCase("list"))) {
             for (Player player : Bukkit.getOnlinePlayers()) options.add(player.getName());
             if (args[0].equalsIgnoreCase("list")) options.add("all");
+        } else if (args.length == 2 && admin && args[0].equalsIgnoreCase("doctor")) {
+            options.add("resolve");
+        } else if (args.length == 2 && admin && args[0].equalsIgnoreCase("backup")) {
+            options.add("now");
         }
 
         String typed = args[args.length - 1].toLowerCase(Locale.ROOT);

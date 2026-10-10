@@ -1,3 +1,4 @@
+config-version: 1
 # Magnet. Place a collector and it picks up every item that drops in its chunk. Reload with /magnet reload.
 # The texts are in messages.yml, the prices for selling are in prices.yml.
 
@@ -75,8 +76,15 @@ hologram:
     - "<gray>Items: <white><items>"
     - "<gray>Kinds: <white><types>"
 
+# Copies of the database (collectors.db), made while the server runs and checked before older ones are removed.
+# They are in the "backups" folder. /magnet backup now makes one at once.
+backup:
+  # Hours between copies.
+  interval-hours: 6
+  # How many copies to keep.
+  keep: 7
+
 # Anonymous usage beacon: plugin name/version, server software/version and online/max player
 # counts, nothing else. Set to false to turn it off.
 metrics:
   enabled: true
-  interval-minutes: 45

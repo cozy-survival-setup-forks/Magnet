@@ -18,6 +18,7 @@ dependencies {
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") { isTransitive = false }
     compileOnly("com.github.brcdev-minecraft:shopgui-api:3.0.0") { isTransitive = false }
 
+    testImplementation("org.xerial:sqlite-jdbc:3.47.1.0")
     testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")

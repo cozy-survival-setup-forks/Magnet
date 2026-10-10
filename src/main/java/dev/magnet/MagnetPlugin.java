@@ -1,5 +1,13 @@
 package dev.magnet;
 
+import dev.magnet.safe.ConfigMigrator;
+import dev.magnet.safe.Doctor;
+import dev.magnet.safe.FileBackups;
+import dev.magnet.safe.Guard;
+import dev.magnet.safe.Health;
+import dev.magnet.safe.Prep;
+import dev.magnet.safe.SafeIo;
+import dev.magnet.safe.ServerId;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -17,6 +25,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Magnet: one collector per chunk that picks up every item dropped in that chunk, from mobs, farms, blocks or
@@ -24,6 +37,31 @@ import java.io.File;
  */
 public final class MagnetPlugin extends JavaPlugin implements Listener {
 
+    private static final int CONFIG_VERSION = 1;
+    private static final int LANG_VERSION = 1;
+    /** The price list the owner writes: only kept readable and backed up, nothing is added to it. */
+    private static final String PRICES = "prices.yml";
+
+    private final List<Prep.Spec> files = List.of(
+            new Prep.Spec("config.yml", "config-version", CONFIG_VERSION, Prep.configMigrator(CONFIG_VERSION), rules -> {
+                rules.range("max-types", 1, 100_000);
+                rules.range("max-items", 0, 2_000_000_000);
+                rules.range("autosell-interval", 5, 86_400);
+                rules.range("animation.ground-time", 0, 30);
+                rules.range("animation.max-flying", 1, 1000);
+                rules.range("hologram.height", 0, 10);
+                rules.range("hologram.scale", 0.2, 5);
+                rules.range("hologram.view-distance", 4, 256);
+                rules.range("hologram.update-seconds", 1, 3600);
+                rules.oneOf("price-source", "AUTO", "SHOPGUIPLUS", "FILE");
+                rules.range("backup.interval-hours", 1, 168);
+                rules.range("backup.keep", 1, 90);
+            }),
+            new Prep.Spec("messages.yml", "lang-version", LANG_VERSION, new ConfigMigrator("lang-version", LANG_VERSION), null));
+
+    private BukkitTask backupTask;
+    private boolean started;
+    private Storage storage;
     private Settings settings;
     private Messages messages;
     private Collectors collectors;
@@ -36,6 +74,16 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        Health.storage("SQLite collectors.db for the collectors and what they hold; YAML for config.yml, messages.yml and prices.yml");
+        Prep.startup(this, files);
+        Path prices = getDataFolder().toPath().resolve(PRICES);
+        // a damaged price list is put back from its .bak; without one it is left as it is, as before
+        if (Files.exists(prices) && !SafeIo.parses(prices) && SafeIo.parses(SafeIo.backupOf(prices))) {
+            SafeIo.loadYaml(prices, SafeIo.Policy.SETTINGS, getLogger());
+        } else {
+            SafeIo.refreshBackup(prices);
+        }
+        reloadConfig();
         messages = new Messages(this);
         if (!messages.load() || !configReadable()) {
             getLogger().severe("Magnet cannot start with a broken file, so it is switching itself off. Fix the file named above, "
@@ -50,11 +98,16 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         holograms = new Holograms(this);
         sales.load();
 
-        collectors = new Collectors(new Storage(new File(getDataFolder(), "collectors.db"), getLogger()));
+        storage = new Storage(new File(getDataFolder(), "collectors.db"), getLogger());
+        collectors = new Collectors(storage);
         try {
+            storage.open(backupKeep());
             collectors.load();
         } catch (Exception ex) {
-            getLogger().severe("Could not load collectors, turning off so nothing is overwritten: " + ex);
+            // the players' items are never replaced by an empty set: the plugin stays off until it is sorted out
+            getLogger().severe("Magnet cannot use collectors.db and is switching itself off so no items are lost or overwritten: " + ex.getMessage());
+            Health.failure("collectors.db could not be opened: " + ex.getMessage());
+            collectors = null;
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -75,7 +128,10 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimer(this, sales::clearCache, 1200L, 1200L);
         Bukkit.getScheduler().runTaskTimer(this, this::refreshMenus, 40L, 40L);
         scheduleAutosell();
-        Metrics.start(this);
+        boolean beacon = getConfig().getBoolean("metrics.enabled", true);
+        Metrics.start(this, ServerId.resolve(getDataFolder().toPath(), storage.serverIdSlot(), beacon, getLogger()));
+        scheduleBackups();
+        started = true;
         boolean shopGui = Bukkit.getPluginManager().isPluginEnabled("ShopGUIPlus");
         getLogger().info("Ready: " + collectors.all().size() + " collector(s) loaded, selling "
                 + (sales.enabled() ? "on (prices from " + (settings.priceSource.equals("FILE") ? "prices.yml" : shopGui ? "ShopGUI+" + (settings.priceSource.equals("AUTO") ? " and prices.yml" : "") : "prices.yml") + ")" : "off (needs Vault and an economy plugin)")
@@ -106,13 +162,71 @@ public final class MagnetPlugin extends JavaPlugin implements Listener {
     public void onDisable() {
         if (flights != null) flights.clear();
         if (holograms != null) holograms.stop();
+        if (backupTask != null) backupTask.cancel();
         if (collectors != null) collectors.close();
+    }
+
+    private int backupKeep() {
+        return Math.max(1, Math.min(90, getConfig().getInt("backup.keep", 7)));
+    }
+
+    /** (Re)starts the timer of the database copies from backup.interval-hours and backup.keep. */
+    private void scheduleBackups() {
+        int hours = Math.max(1, Math.min(168, getConfig().getInt("backup.interval-hours", 6)));
+        storage.configureBackups(backupKeep());
+        if (backupTask != null) backupTask.cancel();
+        backupTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, storage::backup, 20L * 60, hours * 3600L * 20L);
+    }
+
+    /** The text of /magnet doctor. */
+    List<String> doctor() {
+        List<String> extra = new ArrayList<>(Prep.versionLines(this, files));
+        extra.add("Database: collectors.db, schema " + storage.schemaVersion() + " (this plugin writes " + Storage.SCHEMA + ")");
+        extra.add("Collectors: " + collectors.all().size());
+        String newest = storage.newestBackup();
+        extra.add("Newest database copy on disk: " + (newest == null ? "none yet" : newest));
+        extra.add("Pending writes: " + storage.pendingWrites() + ", failed writes since start: " + storage.failedWrites());
+        try {
+            List<String> unknown = storage.journal() == null ? List.of() : storage.journal().unknown();
+            extra.add("Sales that may or may not have been paid (not repeated): " + unknown.size());
+            unknown.forEach(line -> extra.add("  " + line + "   (after checking: /magnet doctor resolve <id>)"));
+        } catch (SQLException e) {
+            extra.add("Sale record could not be read: " + e.getMessage());
+        }
+        return Doctor.report(getName(), getPluginMeta().getVersion(), extra);
+    }
+
+    boolean resolvePayout(String id) {
+        try {
+            return storage.journal() != null && storage.journal().resolve(id);
+        } catch (SQLException e) {
+            getLogger().severe("Could not update the sale record: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** /magnet backup now: a checked copy of the database and of the settings and price files. */
+    boolean backupNow() {
+        collectors.save();
+        boolean database = storage.backup();
+        List<String> names = new ArrayList<>(Prep.fileNames(files));
+        names.add(PRICES);
+        boolean settingsFiles = FileBackups.snapshot(getDataFolder().toPath(), names, 5, getLogger());
+        return database && settingsFiles;
     }
 
     /** @return false if a file is broken, in which case nothing changed */
     public boolean reload() {
+        if (started) {
+            List<Guard.Problem> problems = Prep.validate(this, files);
+            if (!problems.isEmpty()) {
+                Prep.logRejected(this, problems);
+                return false;
+            }
+        }
         if (!configReadable() || !messages.load()) return false;
         reloadConfig();
+        scheduleBackups();
         settings = Settings.from(getConfig(), this);
         sales.load();
         holograms.start();
